@@ -3,6 +3,7 @@
 const { BCRYPT_WORK_FACTOR } = require("../config");
 const db = require("../db");
 const bcrypt = require("bcrypt");
+const { BadRequestError } = require("../expressError");
 
 /** User of the site. */
 
@@ -44,11 +45,13 @@ class User {
     );
 
     const user = result.rows[0];
-
+    console.log(user, "username", username);
     if (user) {
+      //let resultss = await bcrypt.compare(password, user.password);
+      //console.log("brcypt", resultss);
       return await bcrypt.compare(password, user.password);
     }
-    throw new NotFoundError("User not found");
+    throw new BadRequestError("User not found");
   }
 
   /** Update last_login_at for user */

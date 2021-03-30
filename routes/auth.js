@@ -3,7 +3,7 @@ const User = require("../models/user");
 const Router = require("express").Router;
 const router = new Router();
 const jwt = require("jsonwebtoken");
-const { UnauthorizedError } = require("../expressError");
+const { UnauthorizedError, BadRequestError } = require("../expressError");
 const {
   ensureLoggedIn,
   ensureCorrectUser,
@@ -15,13 +15,14 @@ const { SECRET_KEY } = require("../config");
 
 router.post("/login", async function (req, res) {
   const { username, password } = req.body;
-  let isValidUser = User.authenticate(username, password);
+  let isValidUser = await User.authenticate(username, password);
+  console.log(isValidUser);
   if (isValidUser) {
     User.updateLoginTimestamp(username);
     let token = jwt.sign({ username }, SECRET_KEY);
     return res.json({ token });
   }
-  throw new UnauthorizedError("Invalid user/password");
+  throw new BadRequestError();
 });
 
 /** POST /register: registers, logs in, and returns token.
@@ -30,9 +31,10 @@ router.post("/login", async function (req, res) {
  */
 
 router.post("/register", async function (req, res) {
-  User.register(req.body);
+  let user = await User.register(req.body);
 
-  let token = jwt.sign(req.body.username, SECRET_KEY);
+  let token = jwt.sign({ username: user.username }, SECRET_KEY);
+
   return res.json({ token });
 });
 

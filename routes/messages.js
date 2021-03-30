@@ -2,7 +2,11 @@
 
 const Router = require("express").Router;
 const router = new Router();
-
+const {
+  ensureLoggedIn,
+  ensureCorrectUser,
+  authenticateJWT,
+} = require("../middleware/auth");
 
 const { SECRET_KEY } = require("../config");
 
@@ -18,15 +22,11 @@ const { SECRET_KEY } = require("../config");
  * Makes sure that the currently-logged-in users is either the to or from user.
  *
  **/
- router.get("/:id", async function(req, res) {
-    ensureLoggedIn();
-    ensureCorrectUser(res.locals.user);
-    let message = Message.get(req.params.id)
-    //HOW DO WE GET THE ID OR USERNAME OF CURRENTLY LOGGED IN AND AUTHENTICATED USER
-    return res.json({message: message})
-})
-
-
+router.get("/:id", ensureCorrectUser, async function (req, res) {
+  let message = await Message.get(req.params.id);
+  //HOW DO WE GET THE ID OR USERNAME OF CURRENTLY LOGGED IN AND AUTHENTICATED USER
+  return res.json({ message: message });
+});
 
 /** POST / - post message.
  *
@@ -34,15 +34,12 @@ const { SECRET_KEY } = require("../config");
  *   {message: {id, from_username, to_username, body, sent_at}}
  *
  **/
- router.post("/", async function(req, res) {
-    ensureLoggedIn();
-    ensureCorrectUser(res.locals.user);
-    let body = req.body.body;
-    let to_username = req.body.to_username;
-    let current_logged_in = res.locals.user;
-    let message = Message.create(current_logged_in, to_username, body)
-    return res.json({message: message})
-})
+router.post("/", ensureCorrectUser, async function (req, res) {
+  let body = req.body.body;
+  let to_username = req.body.to_username;
+  let message = await Message.create(res.locals.user, to_username, body);
+  return res.json({ message: message });
+});
 
 /** POST/:id/read - mark message as read:
  *
@@ -51,12 +48,9 @@ const { SECRET_KEY } = require("../config");
  * Makes sure that the only the intended recipient can mark as read.
  *
  **/
- router.post("/:id/read", async function(req, res) {
-    ensureLoggedIn();
-    ensureCorrectUser(res.locals.user);
-    let markedMessage = Message.markRead(req.params.id);
-    return res.json({message: markedMessage})
-})
-
+router.post("/:id/read", ensureCorrectUser, async function (req, res) {
+  let markedMessage = await Message.markRead(req.params.id);
+  return res.json({ message: markedMessage });
+});
 
 module.exports = router;
